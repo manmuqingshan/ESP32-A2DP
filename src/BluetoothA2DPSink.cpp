@@ -608,6 +608,15 @@ void BluetoothA2DPSink::av_hdl_a2d_evt(uint16_t event, void *p_param) {
       a2d = (esp_a2d_cb_param_t *)(p_param);
       if (ESP_A2D_INIT_SUCCESS == a2d->a2d_prof_stat.init_state) {
         ESP_LOGI(BT_AV_TAG, "A2DP PROF STATE: Init Compl\n");
+#if A2DP_MANAGED_DECODER_SUPPORTED
+        // stream endpoints must only be registered after the A2DP profile
+        // has finished initializing (this event), otherwise registration
+        // silently fails and the negotiation with the peer never opens the
+        // stream (ESP-IDF issue espressif/esp-idf#18786)
+        if (use_managed_decoder()) {
+          register_managed_decoder_seps();
+        }
+#endif
       } else {
         ESP_LOGI(BT_AV_TAG, "A2DP PROF STATE: Deinit Compl\n");
       }
@@ -1176,15 +1185,6 @@ void BluetoothA2DPSink::av_hdl_stack_evt(uint16_t event, void* p_param) {
       if (esp_a2d_register_callback(ccall_app_a2d_callback) != ESP_OK) {
         ESP_LOGE(BT_AV_TAG, "esp_a2d_register_callback");
       }
-
-#if A2DP_MANAGED_DECODER_SUPPORTED
-      // register one stream endpoint per decoder added via add_decoder(),
-      // and decode whichever gets negotiated using the registered
-      // audio_tools decoders
-      if (use_managed_decoder()) {
-        register_managed_decoder_seps();
-      }
-#endif
 
       // Legacy decoded-data path: only used when the managed decoder path
       // (add_decoder()) is not active
