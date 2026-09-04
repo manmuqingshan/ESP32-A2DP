@@ -37,6 +37,19 @@
 // registration is expected to fail (logged via ESP_A2D_SEP_REG_STATE_EVT)
 // and the source will negotiate SBC instead, which still works fine.
 //
+// Registering more than one stream endpoint (as add_decoder() does here)
+// also requires these sdkconfig/menuconfig settings, otherwise
+// esp_a2d_sink_register_stream_endpoint() fails with ESP_ERR_INVALID_ARG for
+// every seid beyond the first:
+//   CONFIG_BT_A2DP_USE_EXTERNAL_CODEC=y
+//   CONFIG_BT_A2DP_CODEC_AAC_ENABLED=y   (only needed for AAC)
+//   CONFIG_BT_A2DP_SEP_NUM_MAX=2         (>= number of add_decoder() calls)
+// This is set via "Component config > Bluetooth > Bluedroid Options" in
+// `idf.py menuconfig` when building this library as an ESP-IDF component;
+// with the plain Arduino IDE there is no sdkconfig to edit, so building via
+// ESP-IDF (with arduino-esp32 as a component) or via PlatformIO with a
+// sdkconfig.defaults is required to register more than one endpoint.
+//
 // bck = 14
 // ws = 15
 // data_out = 22
